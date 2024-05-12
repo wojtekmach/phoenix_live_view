@@ -344,7 +344,8 @@ defmodule Phoenix.LiveView.Channel do
   end
 
   def handle_info({:phoenix_live_reload, _topic, _changed_file}, %{socket: socket} = state) do
-    Phoenix.CodeReloader.reload(socket.endpoint)
+    reloader = socket.private[:reloader] || Phoenix.CodeReloader
+    reloader.(socket.endpoint)
 
     new_socket =
       Enum.reduce(socket.assigns, socket, fn {key, val}, socket ->
@@ -1523,6 +1524,13 @@ defmodule Phoenix.LiveView.Channel do
     if live_reload_config[:notify][:live_view] do
       state.socket.endpoint.subscribe("live_view")
     end
+
+    state =
+      if reloader = live_reload_config[:reloader] do
+        put_in(state.socket.private[:reloader], reloader)
+      else
+        state
+      end
 
     {:noreply, state}
   end
